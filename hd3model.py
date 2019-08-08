@@ -27,10 +27,11 @@ class HD3Model(nn.Module):
                 get_prob=False,
                 get_loss=False,
                 get_epe=False,
-                get_vis=False):
+                get_vis=False,
+                get_feats=False):
         result = {}
 
-        ms_prob, ms_vect = self.hd3net(torch.cat(img_list, 1))
+        ms_prob, ms_vect, feats = self.hd3net(torch.cat(img_list, 1))
         if get_vect:
             result['vect'] = ms_vect[-1]
         if get_prob:
@@ -45,5 +46,7 @@ class HD3Model(nn.Module):
         if get_vis:
             result['vis'] = get_visualization(img_list, label_list, ms_vect,
                                               ms_prob, self.ds)
+        if get_feats:
+            result['feats'] = feats
 
         return result

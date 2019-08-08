@@ -9,7 +9,7 @@ __all__ = [
 ]
 
 
-def flow_warp(x, flo, mul=True):
+def flow_warp(x, flo, mul=True, mode='bilinear'):
     """
     inverse warp an image/tensor (im2) back to im1, according to the optical flow
 
@@ -35,9 +35,9 @@ def flow_warp(x, flo, mul=True):
                         dim=1)
 
     vgrid = vgrid.permute(0, 2, 3, 1)
-    output = F.grid_sample(x, vgrid, padding_mode='border')
+    output = F.grid_sample(x, vgrid, mode=mode, padding_mode='border')
     mask = torch.ones(x.size(), device=x.device)
-    mask = F.grid_sample(mask, vgrid, padding_mode='zeros')
+    mask = F.grid_sample(mask, vgrid, mode=mode, padding_mode='zeros')
 
     mask[mask < 0.9999] = 0
     mask[mask > 0] = 1

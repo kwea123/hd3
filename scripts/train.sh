@@ -1,17 +1,17 @@
 python -u train.py \
-  --dataset_name=your_dataset_name \
+  --dataset_name=vkitti \
   --train_root=path_to_your_training_data \
   --train_list=lists/dataset_training_list \
   --val_root=path_to_your_validation_data \
   --val_list=lists/dataset_validation_list \
-  --task=stereo/flow \
-  --base_lr=initial_learning_rate \
+  --task=flow \
+  --base_lr=1e-5 \
   --encoder=dlaup \
   --decoder=hda \
   --context \
   --workers=16 \
-  --epochs=200 \
-  --batch_size=32 \
+  --epochs=2000 \
+  --batch_size=16 \
   --evaluate \
   --batch_size_val=4 \
   --pretrain=path_to_pretrained_model \

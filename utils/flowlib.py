@@ -23,7 +23,7 @@ Flow Section
 """
 
 
-def read_flow(filename):
+def read_flow(filename, dataset_name):
     """
     read optical flow data from flow file
     :param filename: name of the flow file
@@ -32,7 +32,10 @@ def read_flow(filename):
     if filename.endswith('.flo'):
         flow = read_flo_file(filename)
     elif filename.endswith('.png'):
-        flow = read_kitti_png_file(filename)
+        if dataset_name == 'KITTI':
+            flow = read_kitti_png_file(filename)
+        elif dataset_name == 'vkitti':
+            flow = read_vkitti_png_flow(filename)
     elif filename.endswith('.pfm'):
         flow = read_pfm_file(filename)[:, :, :2].astype(np.float32)
     else:
@@ -234,9 +237,12 @@ def evaluate_flow(gt_flow, pred_flow):
     return average_pe
 
 
-def evaluate_kitti_flow(gt_flow, pred_flow, rigid_flow=None):
+def evaluate_kitti_flow(gt_flow, pred_flow, mask=None):
     if gt_flow.shape[2] == 2:
-        gt_mask = np.ones((gt_flow.shape[0], gt_flow.shape[1]))
+        if mask is None:
+            gt_mask = np.ones((gt_flow.shape[0], gt_flow.shape[1]))
+        else:
+            gt_mask = mask
         epe, acc = flow_kitti_error(gt_flow[:, :, 0], gt_flow[:, :, 1],
                                     pred_flow[:, :, 0], pred_flow[:, :, 1],
                                     gt_mask)
@@ -428,6 +434,21 @@ def read_png_file(flow_file):
     flow[invalid_idx, 0] = 0
     flow[invalid_idx, 1] = 0
     return flow
+
+def read_vkitti_png_flow(flow_file):
+    "Convert from .png to (h, w, 2) (flow_x, flow_y) float32 array"
+    # read png to bgr in flow_file bit unsigned short
+    bgr = cv2.imread(flow_file, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+    h, w, _c = bgr.shape
+    assert bgr.dtype == np.uint16 and _c == 3
+    # b == invalid flow flag: == 0 for sky or other invalid flow
+    invalid = bgr[..., 0] == 0
+    # g,r == flow_y,x normalized by height,width and scaled to [0;2**16 - 1]
+    out_flow = 2.0 / (2**16 - 1.0) * bgr[..., 2:0:-1].astype('f4') - 1
+    out_flow[..., 0] *= w - 1
+    out_flow[..., 1] *= h - 1
+    out_flow[invalid] = 0   # or another value (e.g., np.nan)
+    return out_flow
 
 
 def read_kitti_png_file(flow_file):

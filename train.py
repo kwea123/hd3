@@ -143,7 +143,8 @@ def main():
         data_root=args.train_root,
         data_list=args.train_list,
         label_num=1,
-        transform=train_transform)
+        transform=train_transform,
+        dataset_name=args.dataset_name)
     train_loader = torch.utils.data.DataLoader(
         train_data,
         batch_size=args.batch_size,
@@ -156,7 +157,8 @@ def main():
             data_root=args.val_root,
             data_list=args.val_list,
             label_num=1,
-            transform=val_transform)
+            transform=val_transform,
+            dataset_name=args.dataset_name)
         val_loader = torch.utils.data.DataLoader(
             val_data,
             batch_size=args.batch_size_val,
@@ -332,7 +334,7 @@ def validate(val_loader, model):
 def get_lr_scheduler(optimizer, dataset_name):
     if dataset_name in ['FlyingChairs', 'FlyingThings3D']:
         milestones = [70, 100, 130, 160]
-    elif dataset_name == 'KITTI':
+    elif dataset_name == 'KITTI' or dataset_name == 'vkitti':
         milestones = [1000, 1500]
     elif dataset_name == 'MPISintel':
         milestones = [600, 900]

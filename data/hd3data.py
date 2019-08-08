@@ -15,7 +15,8 @@ class HD3Data(Dataset):
                  data_list,
                  label_num=0,
                  transform=None,
-                 out_size=False):
+                 out_size=False,
+                 dataset_name=None):
         assert mode in ["flow", "stereo"]
         self.mode = mode
         self.data_root = data_root
@@ -23,6 +24,7 @@ class HD3Data(Dataset):
         self.label_num = label_num
         self.transform = transform
         self.out_size = out_size
+        self.dataset_name = dataset_name
 
     def __len__(self):
         return len(self.data_list)
@@ -35,7 +37,7 @@ class HD3Data(Dataset):
             if i < img_num:
                 img_list.append(read_gen(join(self.data_root, name), "image"))
             else:
-                label = read_gen(join(self.data_root, name), self.mode)
+                label = read_gen(join(self.data_root, name), self.mode, self.dataset_name)
                 if self.mode == "stereo":
                     label = fl.disp2flow(label)
                 label_list.append(label)
@@ -53,14 +55,14 @@ class HD3Data(Dataset):
         return samples
 
 
-def read_gen(file_name, mode):
+def read_gen(file_name, mode, dataset_name=None):
     ext = splitext(file_name)[-1]
     if mode == 'image':
         assert ext in ['.png', '.jpeg', '.ppm', '.jpg']
         return Image.open(file_name)
     elif mode == 'flow':
         assert ext in ['.flo', '.png', '.pfm']
-        return fl.read_flow(file_name)
+        return fl.read_flow(file_name, dataset_name)
     elif mode == 'stereo':
         assert ext in ['.png', '.pfm']
         return fl.read_disp(file_name)
@@ -121,7 +123,7 @@ def get_transform(dataset_name, task, evaluate=True):
                     transforms.Normalize(mean=mean, std=std)
                 ])
 
-    elif dataset_name == 'KITTI':
+    elif dataset_name == 'KITTI' or dataset_name == 'vkitti':
         if task == 'flow':
             train_transform = transforms.Compose([
                 transforms.MultiScaleRandomCrop([0.5, 1.15], [320, 896],

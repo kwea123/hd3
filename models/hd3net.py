@@ -81,9 +81,9 @@ class HD3Net(nn.Module):
         self.levels = len(corr_range)
         self.ds = ds  # downsample ratio of the coarsest level
         if self.task == 'flow':
-            self.classes = [(2 * d + 1)**2 for d in corr_range]
+            self.classes = [(2*d+1)**2 for d in corr_range]
         else:
-            self.classes = [2 * d + 1 for d in corr_range]
+            self.classes = [2*d+1 for d in corr_range]
 
         if encoder == 'vgg':
             pyr_channels = [16, 32, 64, 96, 128, 196]
@@ -108,14 +108,12 @@ class HD3Net(nn.Module):
 
         for l in range(self.levels):
             setattr(self, 'cost_bn_{}'.format(l), BatchNorm(self.classes[l]))
-            input_d = self.classes[l] + feat_d_offset[l] + up_d_offset[
-                l] + self.dim * (
-                    l > 0)
-            if l < self.levels - 1:
+            input_d = self.classes[l]+feat_d_offset[l]+up_d_offset[l]+self.dim*(l > 0)
+            if l < self.levels-1:
                 up_classes = self.classes[l + 1]
             else:
                 up_classes = -1
-            if context and l == self.levels - 1:
+            if context and l == self.levels-1:
                 setattr(self, 'Decoder_{}'.format(l),
                         Context(input_d, self.classes[l]))
             else:
@@ -156,12 +154,12 @@ class HD3Net(nn.Module):
             tar_feat = fp_1[l]
 
             if l == 0:
-                tar_feat_corr = tar_feat
+                tar_feat_shifted = tar_feat
             else:
-                tar_feat_corr = self.shift(tar_feat, up_curr_vect)
+                tar_feat_shifted = self.shift(tar_feat, up_curr_vect)
 
             cost_vol = correlation.FunctionCorrelation(
-                tensorFirst=ref_feat, tensorSecond=tar_feat_corr)
+                tensorFirst=ref_feat, tensorSecond=tar_feat_shifted)
             if self.task == 'stereo':
                 c = self.classes[l] // 2
                 cost_vol = cost_vol[:, c * (2 * c + 1):(c + 1) *
@@ -183,7 +181,7 @@ class HD3Net(nn.Module):
                 curr_vect += up_curr_vect
             if self.task == 'stereo':
                 curr_vect = torch.clamp(curr_vect, max=0)
-            ms_pred.append([prob_map, curr_vect * 2**(self.ds - l), up_feat])
+            ms_pred.append([prob_map, curr_vect * 2**(self.ds-l), up_feat])
 
             if l < self.levels - 1:
                 up_curr_vect = 2 * F.interpolate(
@@ -194,5 +192,6 @@ class HD3Net(nn.Module):
 
         ms_prob = [l[0] for l in ms_pred]
         ms_vect = [l[1] for l in ms_pred]
+        feats = [ref_feat, tar_feat, tar_feat_shifted]
 
-        return ms_prob, ms_vect
+        return ms_prob, ms_vect, feats
